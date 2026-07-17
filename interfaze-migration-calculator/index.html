@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interfaze Migration Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E14;
+    --surface:#12171F;
+    --surface-2:#161C26;
+    --border:#232B36;
+    --text:#E8EDF2;
+    --muted:#8B96A5;
+    --teal:#29D6C8;
+    --teal-dim:rgba(41,214,200,0.12);
+    --amber:#F5A623;
+    --add-bg:rgba(63,185,80,0.14);
+    --add-fg:#3FB950;
+    --rem-bg:rgba(248,81,73,0.12);
+    --rem-fg:#F85149;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    padding:32px 20px 60px;
+    min-height:100vh;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--teal);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:6px;height:6px;border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 8px var(--teal);
+  }
+
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:clamp(28px,4vw,42px);
+    line-height:1.15;
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  h1 em{
+    font-style:normal;
+    color:var(--teal);
+  }
+  .sub{
+    color:var(--muted);
+    font-size:15px;
+    line-height:1.6;
+    max-width:640px;
+    margin:0 0 36px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  @media (max-width:860px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 16px;
+    border-bottom:1px solid var(--border);
+    background:var(--surface-2);
+  }
+  .panel-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:0.03em;
+  }
+  .dot-row{display:flex;gap:6px;}
+  .tdot{width:9px;height:9px;border-radius:50%;background:#3A4350;}
+
+  textarea{
+    width:100%;
+    height:340px;
+    background:transparent;
+    border:none;
+    resize:vertical;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    line-height:1.65;
+    padding:16px;
+    outline:none;
+  }
+  textarea::placeholder{color:#4B5563;}
+
+  .diff-body{
+    height:340px;
+    overflow:auto;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    line-height:1.65;
+  }
+  .diff-line{
+    display:flex;
+    padding:0 16px;
+    white-space:pre;
+  }
+  .diff-line .gutter{
+    width:18px;
+    flex:none;
+    color:var(--muted);
+    user-select:none;
+  }
+  .diff-line.add{background:var(--add-bg); color:var(--add-fg);}
+  .diff-line.rem{background:var(--rem-bg); color:var(--rem-fg);}
+  .diff-line.ctx{color:var(--muted);}
+  .diff-empty{
+    padding:40px 20px;
+    color:var(--muted);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+  }
+
+  .toolbar{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    border-radius:6px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    padding:7px 12px;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  button:hover{border-color:var(--teal);}
+  button.primary{
+    background:var(--teal);
+    color:#04201D;
+    border-color:var(--teal);
+  }
+  button.primary:hover{filter:brightness(1.08);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+
+  .badge-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin:22px 0 8px;
+  }
+  .stamp{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:20px;
+    background:var(--teal-dim);
+    color:var(--teal);
+    border:1px solid rgba(41,214,200,0.4);
+    border-radius:8px;
+    padding:8px 16px;
+    letter-spacing:0.01em;
+  }
+  .stamp .n{font-size:26px;}
+  .badge-note{color:var(--muted); font-size:13px;}
+
+  .stats-section{
+    margin-top:36px;
+  }
+  .stats-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .stats-head h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:20px;
+    font-weight:600;
+    margin:0;
+  }
+  .stats-head .note{
+    font-size:12.5px;
+    color:var(--muted);
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .inputs-panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:20px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+  }
+  @media (max-width:860px){ .inputs-panel{grid-template-columns:1fr 1fr;} }
+  .field label{
+    display:block;
+    font-size:11.5px;
+    color:var(--muted);
+    margin-bottom:6px;
+    font-family:'JetBrains Mono',monospace;
+    letter-spacing:0.02em;
+  }
+  .field input{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    padding:8px 10px;
+    outline:none;
+  }
+  .field input:focus{border-color:var(--teal);}
+
+  .results{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+    margin-top:16px;
+  }
+  @media (max-width:700px){ .results{grid-template-columns:1fr;} }
+  .result-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px 20px;
+  }
+  .result-card .label{
+    font-size:11.5px;
+    color:var(--muted);
+    font-family:'JetBrains Mono',monospace;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    margin-bottom:8px;
+  }
+  .result-card .value{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:30px;
+    color:var(--amber);
+    line-height:1;
+  }
+  .result-card.teal .value{color:var(--teal);}
+  .result-card .sub{
+    margin-top:6px;
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  .disclaimer{
+    margin-top:18px;
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.6;
+    border-left:2px solid var(--border);
+    padding-left:12px;
+  }
+
+  footer{
+    margin-top:44px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    font-size:12px;
+    color:var(--muted);
+    font-family:'JetBrains Mono',monospace;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">migration proof-of-concept</div>
+  <h1>Switching from OpenAI is <em>one line</em>.<br/>Here's the diff.</h1>
+  <p class="sub">Paste the code you're already using to call OpenAI for extraction, OCR, or structured output. This shows exactly what changes to run it on Interfaze instead — plus what it's costing you to wait.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">your_openai_code</span>
+        <div class="toolbar">
+          <button id="loadExampleBtn">Load example</button>
+        </div>
+      </div>
+      <textarea id="inputCode" placeholder="Paste your OpenAI client code here (JS/TS or Python)…"></textarea>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">diff → interfaze</span>
+        <div class="toolbar">
+          <button id="copyBtn" disabled>Copy migrated code</button>
+        </div>
+      </div>
+      <div class="diff-body" id="diffOutput">
+        <div class="diff-empty">Paste code on the left, or click "Load example" to see it work.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="badge-row" id="badgeRow" style="display:none;">
+    <div class="stamp"><span class="n" id="lineCount">1</span> LINE CHANGED</div>
+    <span class="badge-note">Same OpenAI SDK. Same request shape. Different endpoint.</span>
+  </div>
+
+  <div class="stats-section">
+    <div class="stats-head">
+      <h2>What that line is costing you</h2>
+      <span class="note">editable — plug in your real numbers</span>
+    </div>
+
+    <div class="inputs-panel">
+      <div class="field">
+        <label for="reqVolume">Requests / month</label>
+        <input type="number" id="reqVolume" value="50000" min="0" />
+      </div>
+      <div class="field">
+        <label for="currentCost">Your cost / request ($)</label>
+        <input type="number" id="currentCost" value="0.012" step="0.001" min="0" />
+      </div>
+      <div class="field">
+        <label for="interfazeCost">Interfaze cost / request ($)</label>
+        <input type="number" id="interfazeCost" value="0.004" step="0.001" min="0" />
+      </div>
+      <div class="field">
+        <label for="currentLatency">Your latency (ms)</label>
+        <input type="number" id="currentLatency" value="3200" step="50" min="0" />
+      </div>
+      <div class="field">
+        <label for="interfazeLatency">Interfaze latency (ms)</label>
+        <input type="number" id="interfazeLatency" value="900" step="50" min="0" />
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="result-card">
+        <div class="label">Monthly savings</div>
+        <div class="value" id="monthlySavings">$0</div>
+        <div class="sub" id="monthlySavingsSub">based on volume above</div>
+      </div>
+      <div class="result-card">
+        <div class="label">Annualized savings</div>
+        <div class="value" id="annualSavings">$0</div>
+        <div class="sub">if volume holds steady</div>
+      </div>
+      <div class="result-card teal">
+        <div class="label">Latency reduction</div>
+        <div class="value" id="latencyReduction">0%</div>
+        <div class="sub" id="latencySub">faster per request</div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      These are placeholder rates you can edit — they are not official Interfaze pricing. Swap in real numbers from your OpenAI invoice and Interfaze's current pricing before using this externally.
+    </div>
+  </div>
+
+  <footer>
+    <span>interfaze-migration-calculator · client-side only, nothing is sent anywhere</span>
+    <span>prototype</span>
+  </footer>
+</div>
+
+<script>
+const inputCode = document.getElementById('inputCode');
+const diffOutput = document.getElementById('diffOutput');
+const copyBtn = document.getElementById('copyBtn');
+const badgeRow = document.getElementById('badgeRow');
+const lineCountEl = document.getElementById('lineCount');
+const loadExampleBtn = document.getElementById('loadExampleBtn');
+
+const EXAMPLE_JS = `import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      role: "user",
+      content: [
+        { type: "text", text: "Extract the invoice fields as JSON" },
+        { type: "image_url", image_url: { url: invoiceImageUrl } },
+      ],
+    },
+  ],
+});`;
+
+let migratedCodeCache = "";
+
+function detectAndTransform(code) {
+  const lines = code.split("\n");
+  const outLines = []; // {type: 'ctx'|'add'|'rem', text}
+  let changedCount = 0;
+
+  const baseUrlRegexJs = /baseURL\s*:\s*["'`][^"'`]*["'`]/;
+  const baseUrlRegexPy = /base_url\s*=\s*["'][^"']*["']/;
+  const modelRegexJs = /model\s*:\s*["'`][^"'`]+["'`]/;
+  const modelRegexPy = /model\s*=\s*["'][^']+["']/;
+  const clientCtorJs = /new\s+OpenAI\s*\(\s*\{/;
+  const clientCtorPy = /OpenAI\s*\(/;
+
+  let sawBaseUrl = false;
+  let insertedBaseUrl = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (baseUrlRegexJs.test(line)) {
+      sawBaseUrl = true;
+      outLines.push({type:'rem', text: line});
+      outLines.push({type:'add', text: line.replace(baseUrlRegexJs, 'baseURL: "https://api.interfaze.ai/v1"')});
+      changedCount++;
+      continue;
+    }
+    if (baseUrlRegexPy.test(line)) {
+      sawBaseUrl = true;
+      outLines.push({type:'rem', text: line});
+      outLines.push({type:'add', text: line.replace(baseUrlRegexPy, 'base_url="https://api.interfaze.ai/v1"')});
+      changedCount++;
+      continue;
+    }
+    if (modelRegexJs.test(line)) {
+      outLines.push({type:'rem', text: line});
+      outLines.push({type:'add', text: line.replace(modelRegexJs, 'model: "interfaze-beta"')});
+      changedCount++;
+      continue;
+    }
+    if (modelRegexPy.test(line)) {
+      outLines.push({type:'rem', text: line});
+      outLines.push({type:'add', text: line.replace(modelRegexPy, 'model="interfaze-beta"')});
+      changedCount++;
+      continue;
+    }
+
+    // If no explicit baseURL anywhere and we hit the client constructor open line,
+    // inject one right after it (only once).
+    if (!sawBaseUrl && !insertedBaseUrl && (clientCtorJs.test(line) || clientCtorPy.test(line))) {
+      outLines.push({type:'ctx', text: line});
+      if (clientCtorJs.test(line)) {
+        outLines.push({type:'add', text: '  baseURL: "https://api.interfaze.ai/v1",'});
+      } else {
+        outLines.push({type:'add', text: '    base_url="https://api.interfaze.ai/v1",'});
+      }
+      insertedBaseUrl = true;
+      changedCount++;
+      continue;
+    }
+
+    outLines.push({type:'ctx', text: line});
+  }
+
+  return { outLines, changedCount };
+}
+
+function render(code) {
+  if (!code || !code.trim()) {
+    diffOutput.innerHTML = '<div class="diff-empty">Paste code on the left, or click "Load example" to see it work.</div>';
+    badgeRow.style.display = 'none';
+    copyBtn.disabled = true;
+    return;
+  }
+
+  const { outLines, changedCount } = detectAndTransform(code);
+
+  if (changedCount === 0) {
+    diffOutput.innerHTML = '<div class="diff-empty">Could not auto-detect an OpenAI client or model line in this snippet.<br/><br/>Manual version: point <code>baseURL</code> / <code>base_url</code> at<br/><strong style="color:#29D6C8">https://api.interfaze.ai/v1</strong> and set <code>model</code> to <strong style="color:#29D6C8">"interfaze-beta"</strong>.</div>';
+    badgeRow.style.display = 'none';
+    copyBtn.disabled = true;
+    return;
+  }
+
+  let html = '';
+  let migrated = [];
+  outLines.forEach(l => {
+    const cls = l.type === 'add' ? 'add' : l.type === 'rem' ? 'rem' : 'ctx';
+    const sign = l.type === 'add' ? '+' : l.type === 'rem' ? '-' : ' ';
+    const escaped = l.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    html += `<div class="diff-line ${cls}"><span class="gutter">${sign}</span>${escaped || ' '}</div>`;
+    if (l.type !== 'rem') migrated.push(l.text);
+  });
+
+  diffOutput.innerHTML = html;
+  migratedCodeCache = migrated.join('\n');
+  copyBtn.disabled = false;
+
+  badgeRow.style.display = 'flex';
+  lineCountEl.textContent = changedCount;
+}
+
+inputCode.addEventListener('input', () => render(inputCode.value));
+
+loadExampleBtn.addEventListener('click', () => {
+  inputCode.value = EXAMPLE_JS;
+  render(EXAMPLE_JS);
+});
+
+copyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(migratedCodeCache).then(() => {
+    const original = copyBtn.textContent;
+    copyBtn.textContent = 'Copied ✓';
+    setTimeout(() => { copyBtn.textContent = original; }, 1500);
+  });
+});
+
+// ---- Cost / latency calculator ----
+const reqVolume = document.getElementById('reqVolume');
+const currentCost = document.getElementById('currentCost');
+const interfazeCost = document.getElementById('interfazeCost');
+const currentLatency = document.getElementById('currentLatency');
+const interfazeLatency = document.getElementById('interfazeLatency');
+
+const monthlySavingsEl = document.getElementById('monthlySavings');
+const monthlySavingsSubEl = document.getElementById('monthlySavingsSub');
+const annualSavingsEl = document.getElementById('annualSavings');
+const latencyReductionEl = document.getElementById('latencyReduction');
+const latencySubEl = document.getElementById('latencySub');
+
+function fmtUSD(n) {
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+}
+
+function calc() {
+  const vol = parseFloat(reqVolume.value) || 0;
+  const cCost = parseFloat(currentCost.value) || 0;
+  const iCost = parseFloat(interfazeCost.value) || 0;
+  const cLat = parseFloat(currentLatency.value) || 0;
+  const iLat = parseFloat(interfazeLatency.value) || 0;
+
+  const monthlySave = Math.max(0, (cCost - iCost) * vol);
+  const annualSave = monthlySave * 12;
+  const latPct = cLat > 0 ? Math.max(0, ((cLat - iLat) / cLat) * 100) : 0;
+
+  monthlySavingsEl.textContent = fmtUSD(monthlySave);
+  monthlySavingsSubEl.textContent = vol.toLocaleString() + ' requests / mo';
+  annualSavingsEl.textContent = fmtUSD(annualSave);
+  latencyReductionEl.textContent = latPct.toFixed(0) + '%';
+  latencySubEl.textContent = cLat + 'ms → ' + iLat + 'ms';
+}
+
+[reqVolume, currentCost, interfazeCost, currentLatency, interfazeLatency].forEach(el => {
+  el.addEventListener('input', calc);
+});
+
+calc();
+</script>
+</body>
+</html>
